@@ -27,50 +27,25 @@
             ]
           },
           {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API Reference",
-        "groups": [
-          {
             "group": "Public API",
             "openapi": {
               "source": "https://app.recallio.ai/swagger/v1/swagger.json",
-              "directory": "api-reference"
-            },
-            "pages": [
-              {
-                "openapi": "Memory",
-                "label": "Memory"
-              },
-              {
-                "openapi": "Pack - GraphMemory",
-                "label": "Graph Memory Packs"
-              }
-            ]
+              "directory": "api-reference",
+              "tagGroups": [
+                {
+                  "name": "Memory",
+                  "tags": [
+                    "Memory"
+                  ]
+                },
+                {
+                  "name": "Pack - GraphMemory",
+                  "tags": [
+                    "Pack - GraphMemory"
+                  ]
+                }
+              ]
+            }
           }
         ]
       }
