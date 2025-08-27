@@ -60,7 +60,17 @@
             "openapi": {
               "source": "https://app.recallio.ai/swagger/v1/swagger.json",
               "directory": "api-reference"
-            }
+            },
+            "pages": [
+              {
+                "openapi": "Memory",
+                "label": "Memory"
+              },
+              {
+                "openapi": "Pack - GraphMemory",
+                "label": "Graph Memory Packs"
+              }
+            ]
           }
         ]
       }
