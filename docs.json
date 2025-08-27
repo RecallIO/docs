@@ -30,21 +30,7 @@
             "group": "Public API",
             "openapi": {
               "source": "https://app.recallio.ai/swagger/v1/swagger.json",
-              "directory": "api-reference",
-              "tagGroups": [
-                {
-                  "name": "Memory",
-                  "tags": [
-                    "Memory"
-                  ]
-                },
-                {
-                  "name": "Pack - GraphMemory",
-                  "tags": [
-                    "Pack - GraphMemory"
-                  ]
-                }
-              ]
+              "directory": "api-reference"
             }
           }
         ]
