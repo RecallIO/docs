@@ -8,6 +8,11 @@
     "dark": "#15803D"
   },
   "favicon": "/favicon.svg",
+  "servers": [
+    {
+      "url": "https://app.recallio.ai/"
+    }
+  ],
   "navigation": {
     "tabs": [
       {
@@ -48,8 +53,15 @@
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
+          {
+            "group": "Public API",
+            "openapi": {
+              "source": "https://app.recallio.ai/swagger/v1/swagger.json",
+              "directory": "api-reference"
+            }
+          },
           {
             "group": "API documentation",
             "pages": [
@@ -103,6 +115,17 @@
       "type": "button",
       "label": "Dashboard",
       "href": "https://dashboard.mintlify.com"
+    }
+  },
+  "api": {
+    "playground": {
+      "display": "interactive",
+      "proxy": true
+    },
+    "mdx": {
+      "auth": {
+        "method": "bearer"
+      }
     }
   },
   "contextual": {
