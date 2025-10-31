@@ -1,0 +1,92 @@
+---
+title: "Graph Memory Deep Dive"
+description: "Design rich entity graphs and tune queries in Recallio"
+---
+
+Use this guide when you are ready to productionize Graph Memory. It covers request schemas, tuning parameters, and maintenance endpoints.
+
+## Authentication & roles
+
+- All endpoints require bearer authentication using API keys from **Dashboard → API Keys**.
+- **Contributor** keys can add and search graph data.
+- **Manager** keys are required for `/api/GraphMemory/delete-all`.
+
+```http
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Adding entities and relationships
+
+`POST https://app.recallio.ai/api/GraphMemory/addv2`
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `data` | string or JSON | ✅ | Free-form payload describing the facts. Recallio auto-detects entities/relationships. |
+| `user_id` | string | Optional | Associate the graph facts with a specific resident/agent. |
+| `project_id` | string | Optional | Scope relationships to an environment or property. |
+
+**Response (`GraphAddResponse`)**
+
+- `added_entities[]` — array of `GraphEntity` objects (`id`, `name`, `entity_type`, timestamps).
+- `deleted_entities[]` — entities removed when the new payload supersedes prior facts.
+- `relationships[]` — each `GraphRelationship` captures `source`, `destination`, `relationship_type`, and metadata.
+
+> Upserts: resubmitting facts with the same identifiers replaces earlier relationships, keeping the graph current.
+
+## Searching the graph
+
+`POST https://app.recallio.ai/api/GraphMemory/searchv2`
+
+- **Body fields (`GraphSearchRequest`)**
+  - `query` — natural language question or keywords.
+  - `user_id` / `project_id` — filter graph traversal to a user or environment.
+  - `limit` — maximum number of relationships to return.
+  - `threshold` — cosine similarity cut-off (0–1). Increase for stricter matches.
+
+**Response (`GraphSearchResult`)**
+
+Each entry includes:
+
+- `source` / `destination` — entity names.
+- `relationship` — textual description of the edge.
+- `source_type` / `destination_type` — inferred entity categories.
+- `score` — similarity score (double).
+
+### Query tuning tips
+
+- Start with `limit = 10` and `threshold = 0.25`, then adjust to balance coverage and precision.
+- Include domain vocabulary in the `query` (for example “HVAC technician”) to guide semantic matching.
+- Send `project_id` whenever multiple properties exist to avoid cross-environment leakage.
+
+## Inspecting the graph
+
+`GET https://app.recallio.ai/api/GraphMemory/relationships`
+
+- Query params: `userId`, optional `projectId`, and `limit` (default 100).
+- Returns the same structure as `GraphSearchResult`, enabling dashboards or reconciliation scripts.
+
+## Deleting graph data
+
+`DELETE https://app.recallio.ai/api/GraphMemory/delete-all`
+
+- Query params: `userId` (required) and optional `projectId`.
+- Requires a Manager key.
+- Use when a resident churns or you need to rebuild the graph for a property.
+
+## Error handling
+
+- `400 Bad Request` — invalid JSON or missing required fields. Check the `ErrorReturnClass` payload for specifics.
+- `401 Unauthorized` — missing or incorrect bearer token.
+- `403 Forbidden` — delete invoked with a non-Manager key.
+- `5xx` — transient service issue; retry with exponential backoff.
+
+## Best practices
+
+- **Design stable identifiers** inside your `data` payload so Recallio can reconcile entities across updates.
+- **Group related facts** together (for example property, resident, technician) to maximize relationship extraction per call.
+- **Log the response** from `addv2` to track what changed—persist `GraphEntity.id` values if you need to cross-reference later.
+- **Secure sensitive data** by controlling API key scope and using separate projects for staging vs. production.
+- **Monitor volume** with the relationships endpoint and set alerts if the graph grows unexpectedly.
+
+For complete schemas and live testing, open the [Recallio Swagger reference](https://app.recallio.ai/swagger/index.html).
+

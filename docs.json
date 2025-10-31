@@ -19,11 +19,27 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Knowledge Base",
             "pages": [
               "index",
               "quickstart",
               "development"
+            ]
+          },
+          {
+            "group": "Memory Base",
+            "pages": [
+              "memory-overview",
+              "memory-quickstart",
+              "memory-deep-dive"
+            ]
+          },
+          {
+            "group": "Graph Memory Base",
+            "pages": [
+              "graph-memory-overview",
+              "graph-memory-quickstart",
+              "graph-memory-deep-dive"
             ]
           }
         ]
@@ -50,6 +66,10 @@
   "logo": {
     "light": "/images/logo_recallio.png",
     "dark": "/images/logo.png"
+  },
+  "modeToggle": {
+    "default": "dark",
+    "isHidden": true
   },
   "navbar": {
     "links": [

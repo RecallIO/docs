@@ -1,6 +1,7 @@
 ---
 title: "Knowledge Overview"
 description: "Understand how Recallio ingests and distributes your domain knowledge"
+image: https://docs.recallio.ai/images/og_image.png
 ---
 
 Recallio centralizes everything your team knows about a property, resident, or operation so assistants can answer questions with context. These guides walk through the pieces you need to connect your data sources to the Knowledge service.
@@ -27,6 +28,7 @@ Recallio centralizes everything your team knows about a property, resident, or o
 | --- | --- | --- |
 | Structured operational data that changes frequently | `POST https://app.recallio.ai/api/Knowledge/livedata` | `type`, `rawJson`, optional `userId`, recommended `projectId` |
 | Static or semi-structured reference material (PDF, policy guides, manuals) | `POST https://app.recallio.ai/api/Knowledge/document` | `File`, `ProjectId`, optional `Tags`, `SourceUrl`, `ConsentFlag` |
+| Retrieve processed documents and metadata | `GET https://app.recallio.ai/api/Knowledge/document` | Optional query parameters to filter by `ProjectId`, paging |
 
 - Set the `type` field to a domain-specific label (`"listing"`, `"resident"`, `"maintenance-ticket"`, etc.) so Recallio can group similar payloads.
 - Always include the `projectId` whenever the content belongs to a specific environment; omit it only for global knowledge.

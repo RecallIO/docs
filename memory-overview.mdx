@@ -1,0 +1,48 @@
+---
+title: "Memory Overview"
+description: "See how Recallio captures, searches, and manages conversational memories"
+---
+
+Recallio Memory stores conversational or assistant-derived facts so your automations can reference prior interactions. Use these pages to understand how the Memory endpoints complement the Knowledge Base.
+
+## Core capabilities
+
+- **Store** user-specific memories with `/api/Memory/write`, tagging and scoping them per user or project.
+- **Retrieve** relevant facts in real time with `/api/Memory/recall` and refine results with thresholds and tags.
+- **Summarize & explore** topics with `/api/Memory/recall-summary` and `/api/Memory/recall-topics` to power profile views.
+- **Administer** the dataset with `/api/Memory/delete` and `/api/Memory/export` (Manager role required).
+
+<Tip>
+  All Memory endpoints require an API key from **Dashboard → API Keys**. Use a key with the **Manager** role for delete or export operations.
+</Tip>
+
+## Endpoint quick reference
+
+| Use case | Endpoint | Method | Key inputs |
+| --- | --- | --- | --- |
+| Add a new memory for a user or project | `/api/Memory/write` | `POST` | Body fields: `userId`, `content`, `consentFlag`, optional `projectId`, `tags`, `metadata` |
+| Search for the most relevant memories | `/api/Memory/recall` | `POST` | Query params: `summarized`, `reRank`, `type`, `similarityThreshold`, `limit`; body: `query`, `scope`, `userId`, `projectId`, optional `tags` |
+| Get a condensed view of all facts | `/api/Memory/recall-summary` | `POST` | Body: `scope`, `userId`, `projectId`, optional `tags` |
+| Discover topics extracted from memories | `/api/Memory/recall-topics` | `POST` | Body: `userId`, optional `projectId` |
+| Remove memories for a scope | `/api/Memory/delete` | `DELETE` | Body: `scope`, optional `userId`, `projectId` |
+| Export memories for compliance or BI | `/api/Memory/export` | `GET` | Query params: `Type`, `Format`, optional `UserId`, `ProjectId`, `StartDate`, `EndDate` |
+
+## Before you start
+
+1. **Generate an API key** and store it securely. Keys map to a role; choose **Manager** if you need deletion or export access.
+2. **Align on consent**. The `consentFlag` field must be `true` for every stored memory to meet compliance requirements.
+3. **Decide on scoping**. Use `projectId` to partition memories per environment, and unique `userId` values for personalized recall.
+
+## Where to go next
+
+<CardGroup>
+  <Card title="Memory Kick Start" icon="rocket" href="/memory-quickstart">
+    Learn how to write your first memory and retrieve it with `/api/Memory/recall`.
+  </Card>
+  <Card title="Memory Deep Dive" icon="code" href="/memory-deep-dive">
+    Explore payload schemas, query tuning, and admin workflows for Memory.
+  </Card>
+</CardGroup>
+
+Need the full schema? Refer to the [Recallio Swagger reference](https://app.recallio.ai/swagger/index.html).
+

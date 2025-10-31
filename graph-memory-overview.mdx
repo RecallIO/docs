@@ -1,0 +1,46 @@
+---
+title: "Graph Memory Overview"
+description: "Map your domain as entities and relationships inside Recallio"
+---
+
+Graph Memory enriches Recallio with a knowledge graph that links people, locations, listings, and processes. Use these pages to plan how structured relationships support richer answers and workflows.
+
+## Core capabilities
+
+- **Ingest graph facts** with `POST /api/GraphMemory/addv2`, automatically extracting entities and relationships from structured JSON or text.
+- **Query connected context** using `POST /api/GraphMemory/searchv2` to surface the most relevant paths for an assistant prompt.
+- **Inspect the graph** via `GET /api/GraphMemory/relationships` to understand how nodes connect for a user or project.
+- **Reset scope** with `DELETE /api/GraphMemory/delete-all` (Manager role) when you need to remove stale relationships.
+
+<Tip>
+  All Graph Memory endpoints share the same bearer token you create in **Dashboard → API Keys**. Use a key with the **Manager** role for delete operations.
+</Tip>
+
+## Endpoint quick reference
+
+| Use case | Endpoint | Method | Key inputs |
+| --- | --- | --- | --- |
+| Add entities and relationships | `/api/GraphMemory/addv2` | `POST` | Body: `data` (JSON or text), optional `user_id`, `project_id` |
+| Search graph for relevant paths | `/api/GraphMemory/searchv2` | `POST` | Body: `query`, optional `user_id`, `project_id`, `limit`, `threshold` |
+| List relationships for inspection | `/api/GraphMemory/relationships` | `GET` | Query params: `userId`, optional `projectId`, `limit` |
+| Delete all relationships for a scope | `/api/GraphMemory/delete-all` | `DELETE` | Query params: `userId`, optional `projectId` (Manager key required) |
+
+## Before you start
+
+1. **Generate an API key** and choose the appropriate role. Contributor covers add/search; Manager is required for delete.
+2. **Decide on scoping**. Populate `user_id` when graph data belongs to a specific resident or agent, and `project_id` to isolate relationships per environment.
+3. **Structure your payloads**. Consolidate related attributes into a JSON object under the `data` field so Recallio can detect entities and relations automatically.
+
+## Where to go next
+
+<CardGroup>
+  <Card title="Graph Memory Kick Start" icon="rocket" href="/graph-memory-quickstart">
+    Add your first graph payload and run a search with the v2 endpoints.
+  </Card>
+  <Card title="Graph Memory Deep Dive" icon="code" href="/graph-memory-deep-dive">
+    Learn request schemas, tuning strategies, and maintenance workflows.
+  </Card>
+</CardGroup>
+
+Review full schemas in the [Recallio Swagger reference](https://app.recallio.ai/swagger/index.html).
+

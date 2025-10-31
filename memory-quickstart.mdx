@@ -1,0 +1,104 @@
+---
+title: "Memory Kick Start"
+description: "Write your first memory and retrieve it with Recallio"
+---
+
+Follow these steps to capture personalized memories and surface them in assistant responses.
+
+## Step 1 — Create an API key
+
+1. Sign in to the dashboard and open **API Keys**.
+2. Create a key with at least the **Contributor** role. Use a **Manager** key only if you plan to run delete or export operations.
+3. Copy the value and store it in your secrets manager. All Memory endpoints require the bearer token.
+
+<Warning>
+  Rotate the key immediately if it is exposed. Memory data can include sensitive preferences or history.
+</Warning>
+
+## Step 2 — (Optional) Organize memories by project
+
+If you manage multiple environments, go to **Settings → Projects** and create entries that mirror your homes or regions. Each project exposes a `ProjectId`. Include it in every request to keep memories scoped correctly.
+
+## Step 3 — Store a memory
+
+Use `/api/Memory/write` to add a fact about a user. Remember to set `consentFlag` to `true`.
+
+```bash
+curl https://app.recallio.ai/api/Memory/write \
+  -H "Authorization: Bearer $RECALLIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "resident-991",
+    "projectId": "project_abc",
+    "content": "Taylor Brooks prefers maintenance updates after 6pm via email.",
+    "tags": ["preferences", "communications"],
+    "metadata": {"capturedBy": "rpa-bot", "source": "post-visit-form"},
+    "consentFlag": true
+  }'
+```
+
+The endpoint responds with `202 Accepted` while the memory is embedded in the background.
+
+## Step 4 — Recall the memory
+
+Query `/api/Memory/recall` using the same `userId` and `projectId`. Adjust `limit` or `similarityThreshold` as needed.
+
+```bash
+curl "https://app.recallio.ai/api/Memory/recall?limit=5&similarityThreshold=0.3" \
+  -H "Authorization: Bearer $RECALLIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "resident-991",
+    "projectId": "project_abc",
+    "scope": "user",
+    "query": "communication preferences",
+    "tags": ["preferences"]
+  }'
+```
+
+The response is an array of memories with similarity scores. Feed the top result directly into your assistant prompt.
+
+## Step 5 — Summarize or explore topics (optional)
+
+- Use `/api/Memory/recall-summary` to generate a digest of all facts for the user or project.
+- Call `/api/Memory/recall-topics` to see the taxonomy Recallio extracted from the stored memories.
+
+```bash
+curl https://app.recallio.ai/api/Memory/recall-summary \
+  -H "Authorization: Bearer $RECALLIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "resident-991",
+    "projectId": "project_abc",
+    "scope": "user"
+  }'
+```
+
+## Step 6 — Manage data lifecycle (optional)
+
+- **Delete** memories when a resident offboards:
+
+  ```bash
+  curl -X DELETE https://app.recallio.ai/api/Memory/delete \
+    -H "Authorization: Bearer $MANAGER_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "scope": "user",
+      "userId": "resident-991",
+      "projectId": "project_abc"
+    }'
+  ```
+
+- **Export** memories for audits:
+
+  ```bash
+  curl "https://app.recallio.ai/api/Memory/export?Type=fact&Format=json&ProjectId=project_abc" \
+    -H "Authorization: Bearer $MANAGER_API_KEY"
+  ```
+
+## Next steps
+
+- Browse the [Memory Overview](/memory-overview) for a feature map.
+- Dive into the [Memory Deep Dive](/memory-deep-dive) to tune scoring, tagging, and lifecycle policies.
+- Consult the [Recallio Swagger reference](https://app.recallio.ai/swagger/index.html) for every field and response model.
+

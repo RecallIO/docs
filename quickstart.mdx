@@ -76,6 +76,17 @@ curl https://app.recallio.ai/api/Knowledge/document \
 
 The document endpoint asynchronously extracts text and links it to the chosen project. Track processing status on the Memory Sources page.
 
+### Verify document ingestion via API
+
+List the processed documents and confirm the file appears with the correct project assignment.
+
+```bash
+curl "https://app.recallio.ai/api/Knowledge/document?projectId=project_abc&page=1&pageSize=20" \
+  -H "Authorization: Bearer $RECALLIO_API_KEY"
+```
+
+The response returns paginated document metadata, including filenames, tags, and processing status.
+
 ## Next steps
 
 - Review the [Knowledge Overview](/index) for architectural context.

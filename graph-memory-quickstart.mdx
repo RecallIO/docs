@@ -1,0 +1,106 @@
+---
+title: "Graph Memory Kick Start"
+description: "Add your first entities to the Recallio graph and query them"
+---
+
+Follow this quickstart to publish a connected data payload and fetch the resulting relationships with the Graph Memory v2 endpoints.
+
+## Step 1 — Create an API key
+
+1. Sign in to Recallio and open **API Keys**.
+2. Generate a key with the **Contributor** role (or **Manager** if you also plan to run delete operations).
+3. Copy the value now—keys are only shown once. You will use it as the bearer token for every Graph Memory request.
+
+## Step 2 — (Optional) Set up projects
+
+Create projects in **Settings → Projects** if you support multiple environments (for example, different homes). You will pass the `project_id` with every graph payload to keep relationships scoped correctly.
+
+## Step 3 — Prepare a graph payload
+
+Graph Memory accepts free-form JSON or text in the `data` field. The service extracts entities and relationships automatically.
+
+```bash
+cat <<'EOF' > graph-payload.json
+{
+  "project_id": "project_abc",
+  "user_id": "resident-991",
+  "data": {
+    "listingId": "LST-1001",
+    "address": "500 Market Street",
+    "resident": "Taylor Brooks",
+    "status": "Pending move-in",
+    "preferredTechnician": "Jade Patel",
+    "scheduledServices": [
+      {
+        "type": "HVAC inspection",
+        "date": "2025-02-03",
+        "assignedTo": "Jade Patel"
+      }
+    ]
+  }
+}
+EOF
+```
+
+> Tip: Include descriptive field names so Recallio can infer meaningful relationships (for example, resident, technician, property).
+
+## Step 4 — Add entities and relationships
+
+Invoke `POST /api/GraphMemory/addv2` to ingest the payload.
+
+```bash
+curl https://app.recallio.ai/api/GraphMemory/addv2 \
+  -H "Authorization: Bearer $RECALLIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d @graph-payload.json
+```
+
+You will receive a `201 Created` response containing the entities and relationships that were added.
+
+## Step 5 — Search the graph
+
+Use `POST /api/GraphMemory/searchv2` to retrieve connected context for assistant prompts.
+
+```bash
+cat <<'EOF' > graph-search.json
+{
+  "project_id": "project_abc",
+  "user_id": "resident-991",
+  "query": "Who is assigned to Taylor Brooks' services?",
+  "limit": 5,
+  "threshold": 0.25
+}
+EOF
+
+curl https://app.recallio.ai/api/GraphMemory/searchv2 \
+  -H "Authorization: Bearer $RECALLIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d @graph-search.json
+```
+
+The response is an array of relationships, each with `source`, `relationship`, `destination`, and a similarity `score`.
+
+## Step 6 — Inspect relationships (optional)
+
+Confirm the graph by listing all edges for the same scope.
+
+```bash
+curl "https://app.recallio.ai/api/GraphMemory/relationships?userId=resident-991&projectId=project_abc&limit=50" \
+  -H "Authorization: Bearer $RECALLIO_API_KEY"
+```
+
+## Step 7 — Reset data (optional)
+
+When you need a clean slate, call the delete endpoint with a Manager key.
+
+```bash
+curl -X DELETE "https://app.recallio.ai/api/GraphMemory/delete-all?userId=resident-991&projectId=project_abc" \
+  -H "Authorization: Bearer $MANAGER_API_KEY"
+```
+
+## Next steps
+
+- Review the [Graph Memory Overview](/graph-memory-overview) for a feature summary.
+- Dive into the [Graph Memory Deep Dive](/graph-memory-deep-dive) to learn schema details, ranking controls, and governance patterns.
+- Explore every field in the [Recallio Swagger reference](https://app.recallio.ai/swagger/index.html).
+

@@ -1,0 +1,126 @@
+---
+title: "Memory Deep Dive"
+description: "Tune recall quality and govern conversational data in Recallio"
+---
+
+This guide details the Memory endpoints so you can build reliable retrieval pipelines, summaries, and compliance workflows.
+
+## Authentication & roles
+
+- All endpoints use bearer authentication with API keys from **Dashboard → API Keys**.
+- **Contributor** keys can write and recall memories.
+- **Manager** keys are required for `/api/Memory/delete` and `/api/Memory/export`.
+
+```http
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Writing memories
+
+`POST https://app.recallio.ai/api/Memory/write`
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `userId` | string | ✅ | Unique identifier for the subject of the memory. |
+| `projectId` | string | Optional | Scope to an environment or property. Omit for org-wide memories. |
+| `content` | string | ✅ | Plain text or JSON string describing the fact. Limited to 30 KB. |
+| `tags` | string[] | Optional | Categorize memories for filtering. |
+| `metadata` | object | Optional | Any JSON metadata (for example source system, timestamp). |
+| `consentFlag` | boolean | ✅ | Must be `true` to persist the memory. |
+
+```json
+{
+  "userId": "resident-991",
+  "projectId": "project_abc",
+  "content": "Taylor Brooks prefers evening communications via email.",
+  "tags": ["communications", "preferences"],
+  "metadata": {
+    "capturedBy": "rpa-bot",
+    "origin": "post-visit-form"
+  },
+  "consentFlag": true
+}
+```
+
+The API returns `202 Accepted` while the embedding job runs asynchronously. Re-sending the same fact updates it.
+
+## Tuning recall queries
+
+`POST https://app.recallio.ai/api/Memory/recall`
+
+- **Body fields** (schema `MemoryRecallRequest`):
+  - `userId` (required)
+  - `projectId` (required when `scope` is `project` or `team`)
+  - `scope` — use `user`, `project`, or `team`
+  - `query` — natural language search phrase (use `*` wildcard to fetch everything)
+  - `tags` — optional array to narrow the search
+- **Query parameters**:
+  - `summarized` — include generated summary per memory (defaults to `false`)
+  - `reRank` — apply an LLM reranker when many records match
+  - `type` — choose between `facts` (default) and `raw`
+  - `similarityThreshold` — float between 0 and 1; increase to narrow results
+  - `limit` — number of memories to return (default `10`)
+
+```bash
+curl "https://app.recallio.ai/api/Memory/recall?limit=8&similarityThreshold=0.4" \
+  -H "Authorization: Bearer $RECALLIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "resident-991",
+    "projectId": "project_abc",
+    "scope": "user",
+    "query": "maintenance preferences",
+    "tags": ["maintenance"]
+  }'
+```
+
+Each result is a `MemoryWithScoreDto` that includes the text, tags, metadata, and a cosine similarity score.
+
+## Summaries and topic discovery
+
+- `/api/Memory/recall-summary` provides an aggregated narrative of all memories that match the scope and tags. Use it to populate agent briefing cards.
+- `/api/Memory/recall-topics` surfaces the taxonomy Recallio derived from the same dataset, grouped by topic and subtopic.
+
+Both endpoints accept the same scoping fields as `MemoryRecallRequest`; the summary response (`SummarizedMemoriesDto`) includes `content` and `numberOfMemories`, while topics return a `TopicsDto` payload suitable for UI filters.
+
+## Administrative operations
+
+### Delete memories
+
+`DELETE https://app.recallio.ai/api/Memory/delete`
+
+- Body schema `MemoryDeleteRequest` requires `scope` (one of `user`, `project`, `team`).
+- Provide `userId` and/or `projectId` depending on the scope.
+- Requires a Manager key.
+
+### Export memories
+
+`GET https://app.recallio.ai/api/Memory/export`
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `Type` | ✅ | `fact`, `summary`, or `raw` |
+| `Format` | ✅ | `json` or `csv` |
+| `UserId` | Optional | Filter to a single user |
+| `ProjectId` | Optional | Filter to a project |
+| `StartDate` / `EndDate` | Optional | ISO-8601 timestamps to bound the export |
+
+The export streams a file download. Use it for compliance archiving or to seed external analytics.
+
+## Error handling
+
+- `400 Bad Request` — malformed body, missing required fields, or payload size limits. Inspect the `ErrorReturnClass` response for details.
+- `401 Unauthorized` — bearer token missing, expired, or lacking the necessary role.
+- `403 Forbidden` — attempting admin endpoints with a non-Manager key.
+- `5xx` — transient server error; retry with exponential backoff.
+
+## Best practices
+
+- **Normalize identifiers** — consistently prefix `userId` (`resident-`, `agent-`) to make deletions and exports predictable.
+- **Tag thoughtfully** — tags power both filtering and topic extraction; align on a shared taxonomy.
+- **Capture metadata** — store source systems, timestamps, or consent references in `metadata` for audits.
+- **Use thresholds** — start with `similarityThreshold` at `0.3` and adjust upward for precision-critical experiences.
+- **Automate lifecycle** — schedule exports and run scoped deletions when residents churn.
+
+For complete schemas and examples, review the [Recallio Swagger reference](https://app.recallio.ai/swagger/index.html).
+

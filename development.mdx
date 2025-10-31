@@ -97,6 +97,21 @@ curl https://app.recallio.ai/api/Knowledge/document \
 
 Recallio extracts text and metadata, then associates the document with the designated project. Processing is asynchronous; check the Memory Sources page for status.
 
+### List uploaded documents
+
+`GET https://app.recallio.ai/api/Knowledge/document`
+
+- Supports pagination with `page` and `pageSize` query parameters (defaults are provided when omitted).
+- Filter by `projectId` to retrieve documents scoped to a specific environment.
+- Responses include filenames, tags, processing state, and the `ProjectId` you assigned on upload.
+
+```bash
+curl "https://app.recallio.ai/api/Knowledge/document?projectId=project_abc&page=1&pageSize=50" \
+  -H "Authorization: Bearer $RECALLIO_API_KEY"
+```
+
+Use the listing endpoint to power admin dashboards or reconciliation scripts that verify every project has the expected knowledge assets.
+
 ## Operational best practices
 
 - **Idempotency**: include stable identifiers (for example `listingId`, `residentId`) inside `rawJson`. This helps you reason about updates and deletions.
