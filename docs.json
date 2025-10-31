@@ -35,9 +35,9 @@
             "group": "RecallIO.AI API",
             "openapi": {
               "source": "https://app.recallio.ai/swagger/v1/swagger.json",
-              "directory": "api-reference",
-              "maintainOrder": true
+              "directory": "api-reference"
             },
+            "maintainOrder": true,
             "mdx": {
               "auth": {
                 "method": "bearer"
