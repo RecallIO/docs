@@ -1,94 +1,111 @@
 ---
-title: 'Development'
-description: 'Preview changes locally to update your docs'
+title: "Implementation Deep Dive"
+description: "Build resilient integrations with the Recallio Knowledge endpoints"
 ---
 
-<Info>
-  **Prerequisites**:
-  - Node.js version 19 or higher
-  - A docs repository with a `docs.json` file
-</Info>
+Use this guide when you are ready to productionize your Knowledge integration. It covers authentication, request schemas, error handling, and how to sync both structured data and documents.
 
-Follow these steps to install and run Mintlify on your operating system.
+## Authentication
 
-<Steps>
-<Step title="Install the Mintlify CLI">
+- Every request uses bearer authentication. Add the API key you created in the dashboard under **API Keys** to the `Authorization` header.
+- Keys can be rotated at any time—plan for hot swaps by storing them in your secrets manager.
+
+```http
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Live data payload schema
+
+`POST https://app.recallio.ai/api/Knowledge/livedata`
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `type` | string | ✅ | Domain tag for the payload (`listing`, `resident`, `maintenance-ticket`). Use consistent values so the assistant can cluster related data. |
+| `rawJson` | object or stringified JSON | ✅ | The content you want Recallio to understand. Nested objects are supported up to 30 KB. |
+| `projectId` | string | Recommended | Scopes the knowledge to a project/environment. Required if you want data siloed by property or deployment. |
+| `userId` | string | Optional | Attach the payload to a specific user for personalized recall. |
+
+```json
+{
+  "projectId": "project_abc",
+  "type": "resident",
+  "userId": "resident-991",
+  "rawJson": {
+    "residentId": "991",
+    "name": "Taylor Brooks",
+    "leaseEnd": "2025-07-31",
+    "preferences": {
+      "pets": true,
+      "parking": "garage"
+    }
+  }
+}
+```
+
+### Delivery semantics
+
+- The endpoint returns `202 Accepted` after the payload enters the processing queue. Most records are searchable within seconds.
+- Re-sending a payload with the same identifiers inside `rawJson` acts as an upsert; the latest submission becomes the source of truth.
+- Break large updates into multiple requests instead of sending a single oversized document.
+
+### Validation errors
+
+| Status | Reason | Suggested fix |
+| --- | --- | --- |
+| `400 Bad Request` | Missing `type`, invalid JSON, or payload too large | Ensure the body is valid JSON and under 30 KB. |
+| `401 Unauthorized` | Bearer token missing or invalid | Regenerate the API key or confirm the header casing. |
+
+Log the response body: Recallio returns a detailed error payload when validation fails.
+
+## Project and environment mapping
+
+- Create projects in **Settings → Projects**. Each project exposes a unique `ProjectId`.
+- Use a consistent naming convention—many teams mirror production homes or regions.
+- When no `projectId` is provided, knowledge becomes globally visible across the organization. Use this for policies or team-wide playbooks.
+
+<Callout>
+  When sending data for multiple homes, call the endpoint once per project with the appropriate `projectId`. Avoid batching heterogeneous projects in a single payload.
+</Callout>
+
+## Document ingestion
+
+Structured data is only part of the story. Upload reference PDFs (leases, SOPs, inspection reports) so assistants can cite them directly.
+
+### Upload through the dashboard
+
+1. Go to **Knowledge → Memory Sources**.
+2. Drag-and-drop files or connect cloud storage.
+3. Choose whether each file is available to the entire team or a specific project.
+
+### Upload via API
+
+`POST https://app.recallio.ai/api/Knowledge/document`
+
+- Multipart form upload.
+- Required field: `ProjectId`.
+- Optional fields: `Tags[]`, `SourceUrl`, `SourceType`, `ConsentFlag`.
 
 ```bash
-npm i -g mint
-```
-</Step>
-
-<Step title="Preview locally">
-
-Navigate to your docs directory where your `docs.json` file is located, and run the following command:
-
-```bash
-mint dev
+curl https://app.recallio.ai/api/Knowledge/document \
+  -H "Authorization: Bearer $RECALLIO_API_KEY" \
+  -F "File=@policies.pdf" \
+  -F "ProjectId=project_abc" \
+  -F "Tags=policy" \
+  -F "SourceUrl=https://intranet/policies/2025" \
+  -F "ConsentFlag=true"
 ```
 
-A local preview of your documentation will be available at `http://localhost:3000`.
+Recallio extracts text and metadata, then associates the document with the designated project. Processing is asynchronous; check the Memory Sources page for status.
 
-</Step>
-</Steps>
+## Operational best practices
 
-## Custom ports
+- **Idempotency**: include stable identifiers (for example `listingId`, `residentId`) inside `rawJson`. This helps you reason about updates and deletions.
+- **Error monitoring**: capture non-2xx responses and alert on them. Retry `5xx` responses with exponential backoff; do not retry `4xx` without a code change.
+- **Consent tracking**: if you ingest any personal data, store proof of consent and set `ConsentFlag=true` when uploading documents.
+- **Schema evolution**: when adding new fields inside `rawJson`, deploy a migration in your source system first, then update Recallio to avoid missing values.
 
-By default, Mintlify uses port 3000. You can customize the port Mintlify runs on by using the `--port` flag. For example, to run Mintlify on port 3333, use this command:
+## Useful API reference links
 
-```bash
-mint dev --port 3333
-```
-
-If you attempt to run Mintlify on a port that's already in use, it will use the next available port:
-
-```md
-Port 3000 is already in use. Trying 3001 instead.
-```
-
-## Mintlify versions
-
-Please note that each CLI release is associated with a specific version of Mintlify. If your local preview does not align with the production version, please update the CLI:
-
-```bash
-npm mint update
-```
-
-## Validating links
-
-The CLI can assist with validating links in your documentation. To identify any broken links, use the following command:
-
-```bash
-mint broken-links
-```
-
-## Deployment
-
-If the deployment is successful, you should see the following:
-
-<Frame>
-  <img src="/images/checks-passed.png" alt="Screenshot of a deployment confirmation message that says All checks have passed." style={{ borderRadius: '0.5rem' }} />
-</Frame>
-
-## Code formatting
-
-We suggest using extensions on your IDE to recognize and format MDX. If you're a VSCode user, consider the [MDX VSCode extension](https://marketplace.visualstudio.com/items?itemName=unifiedjs.vscode-mdx) for syntax highlighting, and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for code formatting.
-
-## Troubleshooting
-
-<AccordionGroup>
-  <Accordion title='Error: Could not load the "sharp" module using the darwin-arm64 runtime'>
-
-    This may be due to an outdated version of node. Try the following:
-    1. Remove the currently-installed version of the CLI: `npm remove -g mint`
-    2. Upgrade to Node v19 or higher.
-    3. Reinstall the CLI: `npm i -g mint`
-  </Accordion>
-
-  <Accordion title="Issue: Encountering an unknown error">
-  
-    Solution: Go to the root of your device and delete the `~/.mintlify` folder. Then run `mint dev` again.
-  </Accordion>
-</AccordionGroup>
-
-Curious about what changed in the latest CLI version? Check out the [CLI changelog](https://www.npmjs.com/package/mintlify?activeTab=versions).
+- Full OpenAPI specification: [Recallio Swagger](https://app.recallio.ai/swagger/index.html)
+- Endpoint summaries: `/api/Knowledge/livedata` and `/api/Knowledge/document` under the **SoftwareData** tag
+- Related operations: `/api/Knowledge/recall` for querying stored knowledge (see API Reference tab)

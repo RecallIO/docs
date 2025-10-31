@@ -1,97 +1,45 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Knowledge Overview"
+description: "Understand how Recallio ingests and distributes your domain knowledge"
 ---
 
-## Setting up
+Recallio centralizes everything your team knows about a property, resident, or operation so assistants can answer questions with context. These guides walk through the pieces you need to connect your data sources to the Knowledge service.
 
-Get your documentation site up and running in minutes.
+## What the Knowledge service does
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+- **Live data ingestion** via `/api/Knowledge/livedata` keeps resident, listing, or asset records synced field-by-field.
+- **Document ingestion** turns PDFs and other uploads into searchable knowledge that surfaces in Recallio answers.
+- **Environment separation** lets you map data to projects (for example `Home A`, `Home B`, or `Staging`) so answers stay scoped to the right audience.
 
-## Make it yours
+<Tip>
+  All Knowledge endpoints require a bearer token created from **Dashboard → API Keys**.
+</Tip>
 
-Design a docs site that looks great and empowers your users.
+## Before you call any endpoint
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+1. **Create or locate an API key** in the dashboard under **API Keys**. The generated value is the bearer token you send in the `Authorization` header.
+2. **Create projects** for every environment in **Settings → Projects**. Each project exposes a `ProjectId` that you include with every payload to keep knowledge organized.
+3. **Confirm consent** requirements with your team. Each data submission should respect the `ConsentFlag` field when applicable.
+
+## Live data vs. documents
+
+| Use case | Endpoint | Required fields |
+| --- | --- | --- |
+| Structured operational data that changes frequently | `POST https://app.recallio.ai/api/Knowledge/livedata` | `type`, `rawJson`, optional `userId`, recommended `projectId` |
+| Static or semi-structured reference material (PDF, policy guides, manuals) | `POST https://app.recallio.ai/api/Knowledge/document` | `File`, `ProjectId`, optional `Tags`, `SourceUrl`, `ConsentFlag` |
+
+- Set the `type` field to a domain-specific label (`"listing"`, `"resident"`, `"maintenance-ticket"`, etc.) so Recallio can group similar payloads.
+- Always include the `projectId` whenever the content belongs to a specific environment; omit it only for global knowledge.
+
+## Where to go next
+
+<CardGroup>
+  <Card title="Knowledge Quickstart" icon="rocket" href="/quickstart">
+    End-to-end walkthrough: generate an API key, create a project, and make your first `/api/Knowledge/livedata` request.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Implementation Deep Dive" icon="code" href="/development">
+    Payload schemas, validation tips, and how to automate document uploads via API or the dashboard.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+Need the full API surface? Review the [Recallio Swagger reference](https://app.recallio.ai/swagger/index.html).

@@ -1,80 +1,83 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Knowledge Quickstart"
+description: "Connect your first data source to Recallio in a few minutes"
 ---
 
-## Get started in three steps
+This quickstart takes you from a new Recallio workspace to sending your first payload into the Knowledge service.
 
-Get your documentation site running locally and make your first customization.
+## Step 1 — Generate an API key
 
-### Step 1: Set up your local environment
+1. Sign in to the Recallio dashboard.
+2. Navigate to **API Keys** and click **Create key**.
+3. Copy the value immediately; you will not be able to retrieve it again. This value is used as the bearer token in the `Authorization` header for every API request.
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Warning>
+  Treat the key like a password. Rotate it if it is exposed outside your team.
+</Warning>
 
-### Step 2: Deploy your changes
+## Step 2 — Create a project (environment)
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+Projects help you scope knowledge to a specific portfolio, property, or testing environment.
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+1. In the dashboard, go to **Settings → Projects**.
+2. Create a project for each environment you need (for example **Home A**, **Home B**, **Sandbox**).
+3. Copy the `ProjectId` from the project details. Include it with every request so Recallio knows where to store the data.
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+> Skip this step only if the knowledge should be visible to the entire organization.
 
-### Step 3: Go live
+## Step 3 — POST to `/api/Knowledge/livedata`
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+Use the API key and `ProjectId` to send structured data into Recallio. The `type` field is a free-form string that describes the payload.
+
+```bash
+curl https://app.recallio.ai/api/Knowledge/livedata \
+  -H "Authorization: Bearer $RECALLIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "project_abc",
+    "userId": "agent-42",
+    "type": "listing",
+    "rawJson": {
+      "listingId": "LST-1001",
+      "address": "500 Market Street",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "status": "active",
+      "askingPrice": 425000
+    }
+  }'
+```
+
+The endpoint returns `202 Accepted` while the payload is indexed. Within a few seconds you can query the Recallio assistant and it will use the new listing facts in its responses.
+
+### Payload tips
+
+- Choose a `type` value per domain: examples include `"resident"`, `"maintenance-ticket"`, `"inspection"`.
+- Keep `rawJson` under 30 KB. When sending nested objects, convert large arrays to summaries before posting.
+- Provide `userId` when the knowledge should be associated with a specific resident or staff member; leave it blank for shared content.
+
+## Step 4 — Confirm ingestion in the dashboard
+
+Open **Knowledge → Live Data** to verify that Recallio received the payload. You can filter by project or type to spot-check the stored record.
+
+## Optional — Upload supporting documents
+
+- Drag-and-drop files in **Knowledge → Memory Sources** to share knowledge with the whole team or with a specific project.
+- Prefer the API when automating uploads:
+
+```bash
+curl https://app.recallio.ai/api/Knowledge/document \
+  -H "Authorization: Bearer $RECALLIO_API_KEY" \
+  -F "File=@lease.pdf" \
+  -F "ProjectId=project_abc" \
+  -F "Tags=lease" \
+  -F "ConsentFlag=true"
+```
+
+The document endpoint asynchronously extracts text and links it to the chosen project. Track processing status on the Memory Sources page.
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+- Review the [Knowledge Overview](/index) for architectural context.
+- Dive into the [Implementation Deep Dive](/development) to explore schema details, validation strategies, and error handling.
+- Explore the full OpenAPI spec in the [Recallio Swagger reference](https://app.recallio.ai/swagger/index.html).
